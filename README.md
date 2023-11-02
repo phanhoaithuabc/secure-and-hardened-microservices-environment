@@ -112,3 +112,60 @@ submissions/kube_cluster_hardened.png
 submissions/kube_hardening_test_plan.txt
 
 ### Step 3: Harden and Deploy the Flask App
+Here we will focus on hardening and deploying the vulnerable Python Flask app by performing software introspection to identify and remediate vulnerable libraries and code.
+- The application has intentional security flaws in the code that you need to identify and remediate using your knowledge. There are four known appsec vulnerabilities. You will need to minimally remediate the Cross-Site Scripting (XSS) vulnerability in the code and redeploy the app.
+  - Fix minimally the Cross-Site Scripting (XSS) vulnerability in the app.py file located in dvpwa/sqli/app.py. 
+  
+  submissions/app.py
+  
+  - You will get extra points if you can research and remediate any other vulnerabilities in the code, there are three more! Call out the specific line(s) of code you've changed in the app.py file or any other relevant file to remediate the vulnerabilities.
+- Configure and run Grype to identify vulnerabilities in the libraries and remediate them.
+  - Run a Grype scan in the terminal for the first time. Take a screenshot of all Grype findings
+  
+  submissions/grype_app_out_of_box.png
+
+  - Research vulnerable libraries on the NVD website and remediate them.
+  - Re-run Grype until all vulnerable libraries are remediated. Take a screenshot of the Grype output showing 0 findings 
+  
+  submissions/grype_app_hardended.png
+
+- With the Python Flask app hardened, redeploy the app by using docker compose up and access the application on the localhost port 8080 (127.0.0.1:8080).
+
+### Step 4: Implement Runtime Monitoring and Grafana
+Implementing Grafana to visualize run-time security alerts generated via Sysdig Falco.
+
+1. Deploy Helm, Falco SUSE specific headers, Falco SUSE specific drivers +checksum, Falco daemon, and falco-exporter to move love from the pod to grafana. This is a key step, make sure you install the SUSE-specific kernel headers prepared by the Falco team in order to intercept syscalls on the SUSE operating system. Non-SUSE headers and drivers will not work.
+  - GETTING HELP! As falco header and driver installation can be very nuanced, please carefully reference the classroom content. If you get stuck, carefully re-read the classroom content and reference the classroom "Falco kmod and eBPF troubleshooting" page, where we provide substantive troubleshooting steps. If you are blocked, please reach out to the #falco channel in the Kubernetes Slack to ask for advice from the community or ask a Udacity mentor. The falco community is very passionate and is often willing to help follow engineers. Do not give up!
+  - Take a screenshot of the Falco and falco-exporter pods running. 
+
+submissions/kube_pods_screenshot.png
+
+  - Provide evidence that Falco is generating security events by reading the content of a sensitive file. Take a screenshot of the warning message(s) from Falco pod logs or from the falco-exporter metrics page
+
+submissions/falco_alert_screenshot.png
+
+2. Next, configure Falco to send security events to Grafana:
+  - Configure the Prometheus Operator and Grafana.
+  - Import the Falco panel for Grafana. At this point, you should have Grafana running with Falco logs flowing. If the Falco events are not showing up on Grafana, you should repeat steps 1-3 above to generate Falco events.
+  - Take a screenshot of the Falco Grafana panel showing the Falco security event.
+  
+  submissions/falco_grafana_screenshot.png
+
+  - GETTING HELP! If events are not being generated, its most likely that either 1.
+
+3. Optional Challenge:
+  - Falco also allows custom rules to be defined. Following the syntax in /etc/falco/falco_rules.yaml, create at least one new rule in the local rule base located at /etc/falco/falco_rules.local.yaml.
+
+### Step 5: Incident Response
+Introducing a suspicious command onto the Kubernetes cluster simulating a security incident. A payload is a script or file that delivers a malicious action such as running malware:
+- Run the payload.sh to introduce a suspicious command intentionally. The kubectl run command in the payload.sh script will bootstrap containers instantiated with legacy Docker images, such as servethehome/monero_cpu_moneropool, on your cluster.
+- We use these as a canonical examples as they are reliable and clearly illustrate falco in action in a controlled learning environment. Those Docker images will run crypto mining software and have multiple security issues, such as not using the secure communication channels and not having a software bill of materials used in the image.
+- We have intentionally chosen these Docker images to simulate a "controlled" security incident. Depending on the sophisication and care, attacks may use similar techniques. Executing such suspicious workloads in a controlled environment poses a small security risk, particularly if your system is not patched. To be ultra cautious, make sure your host system is patched before you run the crypto demo to reduce the risk. In the real world, patching is a vital control, always make sure your host systems are patched, and remember that attackers do not ask for permission to attack your system.
+- Using the template in the repo, write an incident response report to the CTO to describe what happened. Make sure to be thoughtful and precise as you are writing to an executive. Write at least two sentences for each of the questions in Questions 2-6. 
+
+submissions/incident_response_report.txt
+
+### 3 challenges: Standout Suggestions:
+- Research and remediate any vulnerabilities other than XSS in the code of vuln_app. There are 3 others documented, you will need to research how to remediate one or more of them. Call out which line(s) of code you've changed in the app.py file or any other relevant file to remediate the vulnerabilities.
+- Create at least one new custom Falco rule in the local rule base located at /etc/falco/falco_rules.local.yaml.
+- Test the rule you created in Step 2 by creating a payload (such as shell script with the action the rule monitors for) to trigger the rule.
