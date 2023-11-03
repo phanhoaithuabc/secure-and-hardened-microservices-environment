@@ -1,0 +1,23 @@
+Docker Threat Modeling
+# Given Docker's system components and the STRIDE framework, identify five potential threats that may arise.
+1. Spoofing: Docker Image may contain malicious images or libraries. Which can cause system risks, take control admin accrss
+2. Tampering: Dockerfile, docker deamon misconfiguration cause by actor who access to the host or RKE cluster.
+3. Denial of Service: Service in docker is unable to function because deamon memory maybe over-allocated by attacker launch flood
+4. Elevation of Privileg: The flag --privilege is given by developer can give attaker accesses to other container on the same host...
+5. Information Disclosure: Attacker can make change the information of deamon configuration, and risk to system
+
+
+Kubernetes Threat Modeling
+# Given Kubernetes' system components and the STRIDE framework, identify five potential threats that may arise.
+1. Spoofing: Malicious caller can inject malicious pakage into the k8s container and allow any port to open sockets because basic authentication is not used in default. This happen in master node, Control Plane part.
+2. Tampering: Misconfiguration in ETCD mybe dangerous with us, attacker can use it to modify pod specs and install malware in pods like cripto crawler.
+3. Denial of Service: K8s cluster is not have enough resources to schedule pod because we don't set the limit for the cpu or memory or in a crypto miners attack incident. This happen in master node, Control Plane part.
+4. Information disclosure: Sensitive information can be access because kube-proxy may expose sensitive infformation. we can set the "--kubeconfig" permission less or equal 644 to prevent it. This happen in worker node.
+5. Repudiation: The anonymous user can break the system because the authentication is not used. We can use TLS to authen, .This happen in worker node.
+
+
+Docker-bench Run Results and Analysis
+# From the failed findings, select and document 3 findings from the Docker-bench results that you want to harden based on the 5 attack surface areas you identified in Step 1. At least 1 of the 3 hardened findings should be different from the ones mentioned in the exercise (i.e. 5.10, 5.14, and 5.22).
+[FAIL] 2.16 Ensure Userland Proxy is Disabled (Automated)
+[FAIL] 2.2 Ensure network traffic is restricted between containers on the default bridge (Automated)
+[FAIL] 4.5 Ensure Content trust for Docker is Enabled (Automated)
