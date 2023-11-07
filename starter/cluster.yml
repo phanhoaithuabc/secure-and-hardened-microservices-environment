@@ -8,7 +8,7 @@ nodes:
   - controlplane
   - etcd
   - worker
-  hostname_override: node1
+  hostname_override: localhost
   user: root
   docker_socket: /var/run/docker.sock
   ssh_key: ""
@@ -17,6 +17,7 @@ nodes:
   ssh_cert_path: ""
   labels: {}
   taints: []
+
 #- address: 192.168.50.102
 #  port: "22"
 #  internal_address: 192.168.50.102
@@ -31,6 +32,7 @@ nodes:
 #  ssh_cert_path: ""
 #  labels: {}
 #  taints: []
+
 services:
   etcd:
     image: ""
@@ -107,7 +109,7 @@ services:
     win_extra_binds: []
     win_extra_env: []
 network:
-  plugin: canal
+  plugin: calico
   options: {}
   mtu: 0
   node_selector: {}
@@ -191,7 +193,7 @@ cloud_provider:
   name: ""
 prefix_path: ""
 win_prefix_path: ""
-addon_job_timeout: 0
+addon_job_timeout: 5000
 bastion_host:
   address: ""
   port: ""

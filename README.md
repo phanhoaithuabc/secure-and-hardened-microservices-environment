@@ -90,19 +90,15 @@ Using the starter Dockerfile in the starter repo and an openSUSE base image, cre
 #### Create a Hardened Kubernetes Environment
 - Deploy an RKE cluster using the Vagrantfile.
 - Run Kube-bench for the first time. Take screenshots of the result summary and all failed findings
-
-submissions/kube_cluster_out_of_box.png
+  <p align="center"><img src='submissions/kube_cluster_out_of_box.png'/></p>
 
 - Apply [baseline hardening steps](https://ranchermanager.docs.rancher.com/v2.0-v2.4/reference-guides/rancher-security/rancher-v2.4-hardening-guides/hardening-guide-with-cis-v1.5-benchmark) to the cluster.
 - Re-run Kube-bench to verify the cluster has been hardened via baseline hardening. Take screenshots of the result summary and all failed findings
-
-submissions/kube_cluster_hardened.png
+  <p align="center"><img src='submissions/kube_cluster_hardened.png'/></p>
 
 - The most important aspect of hardening is making sure the hardening does not negatively affect system stability. In the real world all security related changes should be tested on production like systems. The last thing you want as a security engineer is for your hardening to lead to an outage of the Kubernetes cluster. Write at least 200 words describing a Kubernetes-specific test plan based on what you learned from the course. The test plan does not need to address specific hardening steps. Answer these two questions in your test plan:
   - How will you test the changes?
-  - How will you ensure the changes don't negatively affect your cluster?
-
-submissions/kube_hardening_test_plan.txt
+  - How will you ensure the changes don't negatively affect your cluster? => [Answer](submissions/kube_hardening_test_plan.txt)
 
 ### Step 3: Harden and Deploy the Flask App
 Here we will focus on hardening and deploying the vulnerable Python Flask app by performing software introspection to identify and remediate vulnerable libraries and code.
