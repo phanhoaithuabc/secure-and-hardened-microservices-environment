@@ -1,0 +1,21 @@
+1. Incident commander name: Phan Hoai Thu
+
+2. Executive Summary of what happened: 
+The K8s cluster is injected by the attacker and thay deploy 3 crypto miners pod in it.
+
+3. Summary of what was affected:
+The attacker took control of our cluster, and thay deploy containers in it. Their purpose is wanting to get our cpmpute resources for
+crypto-mining. This will cause our services slowly.
+
+4. Summmry of the impact:
+The cluster CPU usage spikes on top (about 95%) when attacker deploy those container. We can explore that by using Prometheus or Grafana.
+
+5. Summary of the remediation steps:
+ - We can imidiately delete those pod out of the cluster by run command:
+   kubectl delete pod/deployment/deamonset... <resources_name> --grace-period=0 --force
+ - Check and limit admin access to resource
+ - Set alert to notify when something bad happen again
+
+6. Summary of lessons learned:
+ - Always use least priviledge to restrict any body attempt to attack our resource.
+ - Set mutiple alerts (RAM, CPU, Disk, Network, traffic...) to check and response with the situation ASAP.

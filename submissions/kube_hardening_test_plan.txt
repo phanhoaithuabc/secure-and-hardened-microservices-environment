@@ -1,0 +1,8 @@
+How will you test the changes?
+Test the cluster is an example of testing in a non-production setting. It can be done bt using VM (virtual box...)
+Wecan also run kube-bench to see what in FAIL and record all change in cluster.yaml file.
+
+How will you ensure the changes don't negatively affect your cluster?
+When we apply and remidiate the changes, we should deploy monitoring system (prometheus...) or observation system (like jager...) 
+to track and to be notified when something happen.  Again, we can test in a non-prodiuction to make sure of it. After done testing 
+process, we can apply to production.

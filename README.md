@@ -103,20 +103,16 @@ Using the starter Dockerfile in the starter repo and an openSUSE base image, cre
 ### Step 3: Harden and Deploy the Flask App
 Here we will focus on hardening and deploying the vulnerable Python Flask app by performing software introspection to identify and remediate vulnerable libraries and code.
 - The application has intentional security flaws in the code that you need to identify and remediate using your knowledge. There are four known appsec vulnerabilities. You will need to minimally remediate the Cross-Site Scripting (XSS) vulnerability in the code and redeploy the app.
-  - Fix minimally the Cross-Site Scripting (XSS) vulnerability in the app.py file located in dvpwa/sqli/app.py. 
-  
-  submissions/app.py
+  - Fix minimally the Cross-Site Scripting (XSS) vulnerability in the app.py file located in vuln_app/sqli/app.py => [result](submissions/app.py)
   
   - You will get extra points if you can research and remediate any other vulnerabilities in the code, there are three more! Call out the specific line(s) of code you've changed in the app.py file or any other relevant file to remediate the vulnerabilities.
 - Configure and run Grype to identify vulnerabilities in the libraries and remediate them.
-  - Run a Grype scan in the terminal for the first time. Take a screenshot of all Grype findings
-  
-  submissions/grype_app_out_of_box.png
+  - Run a Grype scan in the terminal for the first time. Take a screenshot of all Grype findings:
+  <p align="center"><img src='submissions/grype_app_out_of_box.png'/></p>
 
   - Research vulnerable libraries on the NVD website and remediate them.
   - Re-run Grype until all vulnerable libraries are remediated. Take a screenshot of the Grype output showing 0 findings 
-  
-  submissions/grype_app_hardended.png
+  <p align="center"><img src='submissions/grype_app_hardended.png'/></p>
 
 - With the Python Flask app hardened, redeploy the app by using docker compose up and access the application on the localhost port 8080 (127.0.0.1:8080).
 
@@ -125,20 +121,78 @@ Implementing Grafana to visualize run-time security alerts generated via Sysdig 
 
 1. Deploy Helm, Falco SUSE specific headers, Falco SUSE specific drivers +checksum, Falco daemon, and falco-exporter to move love from the pod to grafana. This is a key step, make sure you install the SUSE-specific kernel headers prepared by the Falco team in order to intercept syscalls on the SUSE operating system. Non-SUSE headers and drivers will not work.
   - GETTING HELP! As falco header and driver installation can be very nuanced, please carefully reference the classroom content. If you get stuck, carefully re-read the classroom content and reference the classroom "Falco kmod and eBPF troubleshooting" page, where we provide substantive troubleshooting steps. If you are blocked, please reach out to the #falco channel in the Kubernetes Slack to ask for advice from the community or ask a Udacity mentor. The falco community is very passionate and is often willing to help follow engineers. Do not give up!
-  - Take a screenshot of the Falco and falco-exporter pods running. 
-
-submissions/kube_pods_screenshot.png
+  - Install Falco and Falco-exporter (with Kube-Prometheus-Stack) to monitor logs event 
+    ```bash
+    helm repo add falcosecurity https://falcosecurity.github.io/charts
+    ## Update the Helm repo to get the latest charts
+    helm repo update
+    ## Falco deployment
+    helm install falco falcosecurity/falco --namespace falco --create-namespace --set falco.grpc.enabled=true --set falco.grpc_output.enabled=true
+    ```
+  - Take a screenshot of the Falco and falco-exporter pods running:
+    <p align="center"><img src='submissions/kube_pods_screenshot.png'/></p>
 
   - Provide evidence that Falco is generating security events by reading the content of a sensitive file. Take a screenshot of the warning message(s) from Falco pod logs or from the falco-exporter metrics page
+    ```bash
+    ## To test Falco work:
+    kubectl exec -n falco --stdin -it falco-tdnbm -c falco -- /bin/bash
+    adduser best_hacker
+    cat /etc/shadow > /dev/null
+    exit
 
-submissions/falco_alert_screenshot.png
+    kubectl logs -n falco falco-tdnbm | grep /etc
+    Defaulted container "falco" out of: falco, falcoctl-artifact-follow, falco-driver-loader (init), falcoctl-artifact-install (init)
+    Wed Nov  8 01:46:42 2023: Falco initialized with configuration file: /etc/falco/falco.yaml
+    Wed Nov  8 01:46:42 2023: Loading rules from file /etc/falco/falco_rules.yaml
+    02:04:27.820852250: Warning Sensitive file opened for reading by non-trusted program (file=/etc/shadow gparent=containerd-shim ggparent=systemd gggparent=<NA> evt_type=openat user=root user_uid=0 user_loginuid=-1 process=cat proc_exepath=/usr/bin/cat parent=runc command=cat /etc/shadow terminal=34816 exe_flags=O_RDONLY container_id=620c459ce0b1 container_image=falcosecurity/falco-no-driver container_image_tag=0.36.2 container_name=k8s_falco_falco-tdnbm_falco_96691a9d-e67d-4f0d-9fc3-ad32eb8c944d_0 k8s_ns=falco k8s_pod_name=falco-tdnbm)
+    ```
+    <p align="center"><img src='submissions/falco_alert_screenshot.png'/></p>
 
 2. Next, configure Falco to send security events to Grafana:
   - Configure the Prometheus Operator and Grafana.
   - Import the Falco panel for Grafana. At this point, you should have Grafana running with Falco logs flowing. If the Falco events are not showing up on Grafana, you should repeat steps 1-3 above to generate Falco events.
+    ```bash
+    ## Install ingress-nginx and cert-manager before install prometheus-stack
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    helm repo add stable https://charts.helm.sh/stable
+    helm repo update 
+    helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace --generate-name
+
+    ## Install Falco exporter and service monitor to be recognize by prometheus
+    helm repo update
+    helm install falco-exporter --namespace falco --set serviceMonitor.enabled=true falcosecurity/falco-exporter
+    # forward port to check if exporter works (http://localhost:9376/metrics)
+    export POD_NAME=$(kubectl get pods --namespace falco -l "app.kubernetes.io/name=falco-exporter,app.kubernetes.io/instance=falco-exporter" -o jsonpath="{.items[0].metadata.name}")
+    echo $POD_NAME
+    kubectl port-forward --namespace falco $POD_NAME 9376
+
+    nano falco_service_monitor.yaml
+    apiVersion: monitoring.coreos.com/v1
+    kind: ServiceMonitor
+    metadata:
+      labels:
+        release: prometheus # CHANGE THIS VALUE
+      name: falco-exporter-servicemonitor
+      namespace: falco
+    spec:
+      endpoints:
+        - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+        - port: metrics
+        - interval: 5s
+      namespaceSelector:
+        matchNames:
+          - falco
+      selector:
+        matchLabels:
+          app.kubernetes.io/instance: falco-exporter
+          app.kubernetes.io/name: falco-exporter
+    
+    kubectl apply -f falco_service_monitor.yaml
+    ## Check falco target appear in prometheus
+    http://localhost:9090/targets?search=  
+    ```
   - Take a screenshot of the Falco Grafana panel showing the Falco security event.
-  
-  submissions/falco_grafana_screenshot.png
+    <p align="center"><img src='submissions/falco_grafana_screenshot.png'/></p>
 
   - GETTING HELP! If events are not being generated, its most likely that either 1.
 
@@ -150,9 +204,7 @@ Introducing a suspicious command onto the Kubernetes cluster simulating a securi
 - Run the payload.sh to introduce a suspicious command intentionally. The kubectl run command in the payload.sh script will bootstrap containers instantiated with legacy Docker images, such as servethehome/monero_cpu_moneropool, on your cluster.
 - We use these as a canonical examples as they are reliable and clearly illustrate falco in action in a controlled learning environment. Those Docker images will run crypto mining software and have multiple security issues, such as not using the secure communication channels and not having a software bill of materials used in the image.
 - We have intentionally chosen these Docker images to simulate a "controlled" security incident. Depending on the sophisication and care, attacks may use similar techniques. Executing such suspicious workloads in a controlled environment poses a small security risk, particularly if your system is not patched. To be ultra cautious, make sure your host system is patched before you run the crypto demo to reduce the risk. In the real world, patching is a vital control, always make sure your host systems are patched, and remember that attackers do not ask for permission to attack your system.
-- Using the template in the repo, write an incident response report to the CTO to describe what happened. Make sure to be thoughtful and precise as you are writing to an executive. Write at least two sentences for each of the questions in Questions 2-6. 
-
-submissions/incident_response_report.txt
+- Using the template in the repo, write an incident response report to the CTO to describe what happened. Make sure to be thoughtful and precise as you are writing to an executive. Write at least two sentences for each of the questions in Questions 2-6. => [Answer](submissions/incident_response_report.txt)
 
 ### 3 challenges: Standout Suggestions:
 - Research and remediate any vulnerabilities other than XSS in the code of vuln_app. There are 3 others documented, you will need to research how to remediate one or more of them. Call out which line(s) of code you've changed in the app.py file or any other relevant file to remediate the vulnerabilities.
